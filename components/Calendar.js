@@ -35,11 +35,14 @@ export default class Calendar extends Component {
     customStyle: PropTypes.object,
     dayHeadings: PropTypes.array,
     eventDates: PropTypes.array,
+    disabledDates: PropTypes.array,
+    disabledDays: PropTypes.array,
     monthNames: PropTypes.array,
     nextButtonText: PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.object
     ]),
+    onLongPress: PropTypes.func,
     onDateSelect: PropTypes.func,
     onSwipeNext: PropTypes.func,
     onSwipePrev: PropTypes.func,
@@ -56,8 +59,11 @@ export default class Calendar extends Component {
     startDate: PropTypes.any,
     titleFormat: PropTypes.string,
     today: PropTypes.any,
+    minDate: PropTypes.any,
+    maxDate: PropTypes.any,
     weekStart: PropTypes.number,
-    highlightedDays: PropTypes.array
+    highlightedDays: PropTypes.array,
+    disableSelectEventDate: PropTypes.bool
   };
 
   static defaultProps = {
@@ -65,6 +71,8 @@ export default class Calendar extends Component {
     width: DEVICE_WIDTH,
     dayHeadings: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
     eventDates: [],
+    disabledDates: [],
+    disabledDays: [],
     monthNames: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     nextButtonText: 'Next',
@@ -75,8 +83,11 @@ export default class Calendar extends Component {
     startDate: moment().format('YYYY-MM-DD'),
     titleFormat: 'MMMM YYYY',
     today: moment(),
+    minDate: moment(),
+    maxDate: moment().add(1,'year'),
     weekStart: 1,
-    highlightedDays:[]
+    highlightedDays:[],
+    disableSelectEventDate: false
   };
 
   componentDidMount() {
@@ -144,6 +155,17 @@ export default class Calendar extends Component {
     return parsedDates
   }
 
+  prepareDisabledDates(disabledDates) {
+     const parsedDates = {};
+     disabledDates.forEach(disabled => {
+       const date = moment(disabled);
+       const month = moment(date).startOf('month').format();
+       parsedDates[month] = parsedDates[month] || {};
+       parsedDates[month][date.date() - 1] = {};
+     });
+     return parsedDates;
+  }
+  		  
   selectDate(date) {
     if (this.props.selectedDate === undefined) {
       this.setState({ selectedMoment: date });
@@ -189,7 +211,7 @@ export default class Calendar extends Component {
     }
   }
 
-  renderMonthView(argMoment, eventsMap, highlightedDatesMap) {
+  renderMonthView(argMoment, eventsMap, highlightedDatesMap, disabledDatesMap) {
 
     let
       renderIndex = 0,
@@ -203,6 +225,8 @@ export default class Calendar extends Component {
       todayMoment = this.props.today ? moment(this.props.today) : moment(),
       todayIndex = todayMoment.date() - 1,
       argMonthDaysCount = argMoment.daysInMonth(),
+      argMomentYear = argMoment.format('YYYY'),
+      argMomentMonth = argMoment.format('M'),
       offset = (startOfArgMonthMoment.isoWeekday() - weekStart + 7) % 7,
       argMonthIsToday = argMoment.isSame(todayMoment, 'month'),
       selectedIndex = moment(selectedMoment).date() - 1,
@@ -211,33 +235,69 @@ export default class Calendar extends Component {
     const events = (eventsMap !== null)
       ? eventsMap[argMoment.startOf('month').format()]
       : null;
-
+    
     const highlightedEvents = (highlightedDatesMap !== null) 
       ? highlightedDatesMap[argMoment.startOf('month').format()] 
       : null
 
+    const disabledDates = (disabledDatesMap !== null)
+       ? disabledDatesMap[argMoment.startOf('month').format()]
+       : null;   
+
     do {
       const dayIndex = renderIndex - offset;
       const isoWeekday = (renderIndex + weekStart) % 7;
-
+      
       if (dayIndex >= 0 && dayIndex < argMonthDaysCount) {
-        days.push((
-          <Day
-            startOfMonth={startOfArgMonthMoment}
-            isWeekend={isoWeekday === 0 || isoWeekday === 6}
-            key={`${renderIndex}`}
-            onPress={() => {
-              this.selectDate(moment(startOfArgMonthMoment).set('date', dayIndex + 1));
-            }}
-            caption={`${dayIndex + 1}`}
-            isToday={argMonthIsToday && (dayIndex === todayIndex)}
-            isSelected={selectedMonthIsArg && (dayIndex === selectedIndex)}
-            isHighlighted={highlightedEvents && highlightedEvents[dayIndex]}
-            event={events && events[dayIndex]}
-            showEventIndicators={this.props.showEventIndicators}
-            customStyle={this.props.customStyle}
-          />
-        ));
+        if(moment(startOfArgMonthMoment).set('date', dayIndex + 1).isAfter(moment(this.props.minDate))
+            && moment(startOfArgMonthMoment).set('date', dayIndex + 1).isBefore(moment(this.props.maxDate)))
+        {
+          if(!this.props.disabledDays.includes(isoWeekday) && (!disabledDates || (disabledDates && !disabledDates[dayIndex])) )
+          {
+            days.push((
+              <Day
+                startOfMonth={startOfArgMonthMoment}
+                key={`${renderIndex}`}
+                onPress={() => {
+                  this.selectDate(moment(startOfArgMonthMoment).set('date', dayIndex + 1));
+                }}
+                onLongPress={ () => {
+                  this.props.onLongPress(moment(startOfArgMonthMoment).set('date', dayIndex + 1).format());
+                }}
+                caption={`${dayIndex + 1}`}
+                isToday={argMonthIsToday && (dayIndex === todayIndex)}
+                highlighted={highlightedEvents && highlightedEvents[dayIndex]}
+                isSelected={selectedMonthIsArg && (dayIndex === selectedIndex)}
+                event={events && events[dayIndex]}
+                showEventIndicators={this.props.showEventIndicators}
+                disableSelectEventDate
+                customStyle={this.props.customStyle}
+              />
+            ));
+          } else {
+            days.push(<Day 
+                        key={`${renderIndex}`} 
+                        caption={`${dayIndex + 1}`}
+                        isToday={argMonthIsToday && (dayIndex === todayIndex)}
+                        showEventIndicators={this.props.showEventIndicators}
+                        disabled 
+                        event={events && events[dayIndex]}
+                        disableSelectEventDate
+                        customStyle={this.props.customStyle} 
+                        />);
+          }
+        } else {
+           days.push(<Day 
+                        key={`${renderIndex}`} 
+                        caption={`${dayIndex + 1}`}
+                        isToday={argMonthIsToday && (dayIndex === todayIndex)}
+                        showEventIndicators={this.props.showEventIndicators}
+                        disabled
+                        event={events && events[dayIndex]} 
+                        disableSelectEventDate
+                        customStyle={this.props.customStyle} 
+                        />);
+        }
       } else {
         days.push(<Day key={`${renderIndex}`} filler customStyle={this.props.customStyle} />);
       }
@@ -323,8 +383,8 @@ export default class Calendar extends Component {
     const calendarDates = this.getMonthStack(this.state.currentMonthMoment);
     const eventDatesMap = this.prepareEventDates(this.props.eventDates, this.props.events);
     const numOfWeeks = getNumberOfWeeks(this.state.currentMonthMoment, this.props.weekStart);
-
     const highlightedDatesMap = this.prepareHighlightedDates(this.props.highlightedDays);
+    const disabledDatesMap = this.prepareDisabledDates(this.props.disabledDates);
     return (
       <View style={[styles.calendarContainer, this.props.customStyle.calendarContainer]}>
         {this.renderTopBar()}
@@ -344,11 +404,11 @@ export default class Calendar extends Component {
               height: this.state.rowHeight ? this.state.rowHeight * numOfWeeks : null,
             }}
           >
-            {calendarDates.map((date) => this.renderMonthView(moment(date), eventDatesMap, highlightedDatesMap))}
+            {calendarDates.map((date) => this.renderMonthView(moment(date), eventDatesMap, highlightedDatesMap, disabledDatesMap))}
           </ScrollView>
           :
           <View ref={calendar => this._calendar = calendar}>
-            {calendarDates.map((date) => this.renderMonthView(moment(date), eventDatesMap, highlightedDatesMap))}
+            {calendarDates.map((date) => this.renderMonthView(moment(date), eventDatesMap, highlightedDatesMap, disabledDatesMap))}
           </View>
         }
       </View>
