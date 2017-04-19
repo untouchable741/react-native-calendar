@@ -57,6 +57,7 @@ export default class Calendar extends Component {
     titleFormat: PropTypes.string,
     today: PropTypes.any,
     weekStart: PropTypes.number,
+    highlightedDays: PropTypes.array
   };
 
   static defaultProps = {
@@ -73,7 +74,9 @@ export default class Calendar extends Component {
     showEventIndicators: false,
     startDate: moment().format('YYYY-MM-DD'),
     titleFormat: 'MMMM YYYY',
+    today: moment(),
     weekStart: 1,
+    highlightedDays:[]
   };
 
   componentDidMount() {
@@ -130,6 +133,17 @@ export default class Calendar extends Component {
     return parsedDates;
   }
 
+  prepareHighlightedDates(highlightedDates) {
+    const parsedDates = {};
+    highlightedDates.forEach(event => {
+      const date = moment(event);
+      const month = moment(date).startOf('month').format();
+      parsedDates[month] = parsedDates[month] || {};
+      parsedDates[month][date.date() - 1] = {};
+    });
+    return parsedDates
+  }
+
   selectDate(date) {
     if (this.props.selectedDate === undefined) {
       this.setState({ selectedMoment: date });
@@ -175,7 +189,7 @@ export default class Calendar extends Component {
     }
   }
 
-  renderMonthView(argMoment, eventsMap) {
+  renderMonthView(argMoment, eventsMap, highlightedDatesMap) {
 
     let
       renderIndex = 0,
@@ -198,6 +212,10 @@ export default class Calendar extends Component {
       ? eventsMap[argMoment.startOf('month').format()]
       : null;
 
+    const highlightedEvents = (highlightedDatesMap !== null) 
+      ? highlightedDatesMap[argMoment.startOf('month').format()] 
+      : null
+
     do {
       const dayIndex = renderIndex - offset;
       const isoWeekday = (renderIndex + weekStart) % 7;
@@ -214,6 +232,7 @@ export default class Calendar extends Component {
             caption={`${dayIndex + 1}`}
             isToday={argMonthIsToday && (dayIndex === todayIndex)}
             isSelected={selectedMonthIsArg && (dayIndex === selectedIndex)}
+            isHighlighted={highlightedEvents && highlightedEvents[dayIndex]}
             event={events && events[dayIndex]}
             showEventIndicators={this.props.showEventIndicators}
             customStyle={this.props.customStyle}
@@ -305,6 +324,7 @@ export default class Calendar extends Component {
     const eventDatesMap = this.prepareEventDates(this.props.eventDates, this.props.events);
     const numOfWeeks = getNumberOfWeeks(this.state.currentMonthMoment, this.props.weekStart);
 
+    const highlightedDatesMap = this.prepareHighlightedDates(this.props.highlightedDays);
     return (
       <View style={[styles.calendarContainer, this.props.customStyle.calendarContainer]}>
         {this.renderTopBar()}
@@ -324,11 +344,11 @@ export default class Calendar extends Component {
               height: this.state.rowHeight ? this.state.rowHeight * numOfWeeks : null,
             }}
           >
-            {calendarDates.map((date) => this.renderMonthView(moment(date), eventDatesMap))}
+            {calendarDates.map((date) => this.renderMonthView(moment(date), eventDatesMap, highlightedDatesMap))}
           </ScrollView>
           :
           <View ref={calendar => this._calendar = calendar}>
-            {calendarDates.map((date) => this.renderMonthView(moment(date), eventDatesMap))}
+            {calendarDates.map((date) => this.renderMonthView(moment(date), eventDatesMap, highlightedDatesMap))}
           </View>
         }
       </View>
