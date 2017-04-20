@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  Platform
 } from 'react-native';
 
 import styles from './styles';
@@ -75,6 +76,10 @@ export default class Day extends Component {
     return dayTextStyle;
   }
 
+  longPressDelay = () => {
+    return Platform.OS === 'ios' ? 2000 : 5000
+  }
+
   render() {
     let { caption, customStyle } = this.props;
     const {
@@ -121,6 +126,7 @@ export default class Day extends Component {
         return (
          <TouchableOpacity 
           onPress={onPress}
+          delayLongPress={this.longPressDelay()}
           onLongPress={this.props.onLongPress}>
           <View style={[styles.dayButton, customStyle.dayButton]}>
             <View style={this.dayCircleStyle(false, isSelected, isToday, highlighted, disabled, event)}>
