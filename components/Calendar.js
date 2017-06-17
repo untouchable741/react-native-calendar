@@ -48,6 +48,7 @@ export default class Calendar extends Component {
     onSwipePrev: PropTypes.func,
     onTouchNext: PropTypes.func,
     onTouchPrev: PropTypes.func,
+    eventStyleOndate: PropTypes.func,
     prevButtonText: PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.object
@@ -264,6 +265,8 @@ export default class Calendar extends Component {
                 onLongPress={ () => {
                   this.props.onLongPress(moment(startOfArgMonthMoment).set('date', dayIndex + 1).format());
                 }}
+                eventStyleOndate={this.props.eventStyleOndate}
+                date={moment(startOfArgMonthMoment).set('date', dayIndex + 1)}
                 caption={`${dayIndex + 1}`}
                 isToday={argMonthIsToday && (dayIndex === todayIndex)}
                 highlighted={highlightedEvents && highlightedEvents[dayIndex]}
@@ -279,6 +282,7 @@ export default class Calendar extends Component {
                         key={`${renderIndex}`} 
                         caption={`${dayIndex + 1}`}
                         isToday={argMonthIsToday && (dayIndex === todayIndex)}
+                        eventStyleOndate={this.props.eventStyleOndate}
                         showEventIndicators={this.props.showEventIndicators}
                         disabled 
                         event={events && events[dayIndex]}
@@ -291,6 +295,7 @@ export default class Calendar extends Component {
                         key={`${renderIndex}`} 
                         caption={`${dayIndex + 1}`}
                         isToday={argMonthIsToday && (dayIndex === todayIndex)}
+                        eventStyleOndate={this.props.eventStyleOndate}
                         showEventIndicators={this.props.showEventIndicators}
                         disabled
                         event={events && events[dayIndex]} 
@@ -299,7 +304,7 @@ export default class Calendar extends Component {
                         />);
         }
       } else {
-        days.push(<Day key={`${renderIndex}`} filler customStyle={this.props.customStyle} />);
+        days.push(<Day key={`${renderIndex}`} filler customStyle={this.props.customStyle} eventStyleOndate={this.props.eventStyleOndate}/>);
       }
       if (renderIndex % 7 === 6) {
         weekRows.push(

@@ -26,10 +26,11 @@ export default class Day extends Component {
     isWeekend: PropTypes.bool,
     onPress: PropTypes.func,
     onLongPress: PropTypes.func,
+    eventStyleOndate: PropTypes.func,
     showEventIndicators: PropTypes.bool,
   }
 
-  dayCircleStyle = (isWeekend, isSelected, isToday, highlighted, isDisabled, event) => {
+  dayCircleStyle = (isWeekend, isSelected, isToday, highlighted, isDisabled, event, eventStyleOndate) => {
     const { customStyle } = this.props;
     const dayCircleStyle = [styles.dayCircleFiller, customStyle.dayCircleFiller];
 
@@ -91,11 +92,12 @@ export default class Day extends Component {
       highlighted,
       disabled,
       showEventIndicators,
-      disableSelectEventDate
+      disableSelectEventDate,
+      eventStyleOndate
     } = this.props;
 
     const onPress = disableSelectEventDate && event ? null : this.props.onPress;
-    
+
      if(filler) {
       return (
         <TouchableWithoutFeedback>
@@ -117,7 +119,8 @@ export default class Day extends Component {
                 customStyle.eventIndicatorFiller,
                 event && styles.eventIndicator,
                 event && customStyle.eventIndicator,
-                event && event.eventIndicator]}
+                event && event.eventIndicator,
+                event && eventStyleOndate(this.props.date)]}
               />
             }
             </View>
@@ -138,7 +141,8 @@ export default class Day extends Component {
                 customStyle.eventIndicatorFiller,
                 event && styles.eventIndicator,
                 event && customStyle.eventIndicator,
-                event && event.eventIndicator]}
+                event && event.eventIndicator,
+                event && eventStyleOndate(this.props.date)]}
               />
             }
             </View>
