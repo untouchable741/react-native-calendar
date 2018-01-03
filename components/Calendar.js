@@ -76,6 +76,15 @@ export default class Calendar extends Component {
     weekStart: 1,
   };
 
+  constructor(props) {
+    super(props)
+    this.state = {
+      currentMonthMoment: moment(props.currentMonth),
+      selectedMoment: moment(props.selectedDate),
+      rowHeight: null,
+    }
+  }
+  
   componentDidMount() {
     // fixes initial scrolling bug on Android
     setTimeout(() => this.scrollToItem(VIEW_INDEX), 0)
